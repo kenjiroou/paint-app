@@ -9,73 +9,73 @@
   </head>
   <body>
     <div class="app-container">
-      <!-- Top Toolbar -->
       <header class="top-toolbar">
         <div class="toolbar-left">
           <h1>Paint</h1>
         </div>
+
         <div class="toolbar-center">
-          <button id="undoBtn" class="icon-btn" title="Undo (Ctrl+Z)">
+          <button id="undoBtn" class="icon-btn" type="button" title="Undo">
             <i class="fas fa-undo"></i>
           </button>
-          <button id="redoBtn" class="icon-btn" title="Redo (Ctrl+Y)">
+          <button id="redoBtn" class="icon-btn" type="button" title="Redo">
             <i class="fas fa-redo"></i>
           </button>
           <div class="separator"></div>
-          <button id="saveBtn" class="icon-btn" title="Save as PNG">
+          <button id="saveBtn" class="icon-btn" type="button" title="Save PNG">
             <i class="fas fa-download"></i>
           </button>
         </div>
+
         <div class="toolbar-right">
-          <button id="clearBtn" class="icon-btn danger" title="Clear Canvas">
+          <button id="clearBtn" class="icon-btn danger" type="button" title="Clear Canvas">
             <i class="fas fa-trash"></i>
           </button>
         </div>
       </header>
 
       <div class="main-workspace">
-        <!-- Left Toolbar - Tools -->
         <aside class="left-toolbar">
-          <div class="tool-group">
-            <button class="tool-btn is-active" data-tool="brush" title="Brush">
+          <div class="tool-group icon-tools">
+            <button class="tool-btn is-active" data-tool="brush" type="button" title="Brush">
               <i class="fas fa-paintbrush"></i>
             </button>
-            <button class="tool-btn" data-tool="eraser" title="Eraser">
+            <button class="tool-btn" data-tool="eraser" type="button" title="Eraser">
               <i class="fas fa-eraser"></i>
             </button>
-            <button class="tool-btn" data-tool="line" title="Line">
+            <button class="tool-btn" data-tool="line" type="button" title="Line">
               <i class="fas fa-minus"></i>
             </button>
-            <button class="tool-btn" data-tool="rectangle" title="Rectangle">
+            <button class="tool-btn" data-tool="rectangle" type="button" title="Rectangle">
               <i class="far fa-square"></i>
             </button>
-            <button class="tool-btn" data-tool="circle" title="Circle">
+            <button class="tool-btn" data-tool="circle" type="button" title="Circle">
               <i class="far fa-circle"></i>
             </button>
-            <button class="tool-btn" data-tool="fill" title="Fill">
+            <button class="tool-btn" data-tool="fill" type="button" title="Fill">
               <i class="fas fa-fill-drip"></i>
             </button>
           </div>
 
-          <div class="tool-group">
-            <label for="colorPicker" class="color-label">Color</label>
+          <div class="tool-group control-group">
+            <label for="colorPicker">Color</label>
             <input id="colorPicker" type="color" value="#1f2937" />
             <div id="colorPreview" class="color-preview"></div>
           </div>
 
-          <div class="tool-group">
+          <div class="tool-group control-group">
             <label for="sizeSlider">Size</label>
             <input id="sizeSlider" type="range" min="1" max="50" value="8" />
             <span id="sizeValue">8</span>
           </div>
 
-          <div class="tool-group">
+          <div class="tool-group control-group">
             <label for="opacitySlider">Opacity</label>
             <input id="opacitySlider" type="range" min="0" max="100" value="100" />
             <span id="opacityValue">100%</span>
           </div>
 
-          <div class="tool-group">
+          <div class="tool-group checkbox-group">
             <label class="checkbox-label">
               <input id="fillToggle" type="checkbox" />
               Fill shape
@@ -83,16 +83,14 @@
           </div>
         </aside>
 
-        <!-- Canvas Area -->
-        <div class="canvas-container">
+        <div class="canvas-wrap">
           <canvas id="paintCanvas" width="1280" height="720"></canvas>
         </div>
 
-        <!-- Right Panel - Layers -->
         <aside class="right-panel">
           <div class="panel-header">
             <h3>Layers</h3>
-            <button id="addLayerBtn" class="small-btn" title="Add layer">
+            <button id="addLayerBtn" class="small-btn" type="button" title="Add Layer">
               <i class="fas fa-plus"></i>
             </button>
           </div>
