@@ -2,103 +2,359 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Paint App</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#4666ff" />
+    <title>ペイント</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="app-container">
-      <header class="top-toolbar">
-        <div class="toolbar-left">
-          <h1>Paint</h1>
+    <svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <symbol id="i-brush" viewBox="0 0 24 24"><path d="M14.5 4.5l5 5L10 19H5v-5z" /><path d="M12.5 6.5l5 5" /></symbol>
+        <symbol id="i-eraser" viewBox="0 0 24 24"><path d="M4 15l9-9 6 6-7 7H8z" /><path d="M8.5 10.5l5 5" /><path d="M12 19h8" /></symbol>
+        <symbol id="i-blur" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z" /><path d="M9 14a3 3 0 0 0 3 3" /></symbol>
+        <symbol id="i-fill" viewBox="0 0 24 24"><path d="M4.5 11.5l7-7 7 7-7 7z" /><path d="M4.5 11.5h14" /><path d="M20.5 15s1.5 2 1.5 3a1.5 1.5 0 0 1-3 0c0-1 1.5-3 1.5-3z" /></symbol>
+        <symbol id="i-eyedropper" viewBox="0 0 24 24"><path d="M15 4.5a2.5 2.5 0 0 1 3.5 3.5L16 10.5 13.5 8z" /><path d="M13.5 8L5 16.5V19h2.5L16 10.5" /></symbol>
+        <symbol id="i-line" viewBox="0 0 24 24"><path d="M5 19L19 5" /></symbol>
+        <symbol id="i-rect" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="1.5" /></symbol>
+        <symbol id="i-ellipse" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8.5" ry="6.5" /></symbol>
+        <symbol id="i-hand" viewBox="0 0 24 24"><path d="M8 13V6.5a1.5 1.5 0 0 1 3 0V12M11 11V5a1.5 1.5 0 0 1 3 0v6M14 11V6.5a1.5 1.5 0 0 1 3 0V14a6 6 0 0 1-6 6h-.5a6 6 0 0 1-4.6-2.2L4.5 15a1.5 1.5 0 0 1 2.3-1.9L8 14.5" /></symbol>
+        <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" /></symbol>
+        <symbol id="i-redo" viewBox="0 0 24 24"><path d="M15 14l5-5-5-5" /><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13" /></symbol>
+        <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" /></symbol>
+        <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+        <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14" /></symbol>
+        <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></symbol>
+        <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></symbol>
+        <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></symbol>
+        <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /><path d="M3 3l18 18" /></symbol>
+        <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></symbol>
+        <symbol id="i-unlock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 7.5-2" /></symbol>
+        <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6" /></symbol>
+        <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6" /></symbol>
+        <symbol id="i-merge" viewBox="0 0 24 24"><path d="M12 3v9M8 8l4 4 4-4" /><path d="M4 15l8 4 8-4" /></symbol>
+        <symbol id="i-rename" viewBox="0 0 24 24"><path d="M4 7V5h16v2M12 5v14M9 19h6" /></symbol>
+        <symbol id="i-clear" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M9 9l6 6M15 9l-6 6" /></symbol>
+        <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="9" cy="10" r="1.5" /><path d="M21 16l-5-5-8 8" /></symbol>
+        <symbol id="i-save" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z" /><path d="M8 4v5h7V4M8 20v-6h8v6" /></symbol>
+        <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></symbol>
+        <symbol id="i-new" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v4h4M12 11v6M9 14h6" /></symbol>
+        <symbol id="i-fit" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></symbol>
+        <symbol id="i-rotate-left" viewBox="0 0 24 24"><path d="M4 4v5h5" /><path d="M4.5 9A8 8 0 1 1 6 16.5" /></symbol>
+        <symbol id="i-rotate-right" viewBox="0 0 24 24"><path d="M20 4v5h-5" /><path d="M19.5 9A8 8 0 1 0 18 16.5" /></symbol>
+        <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z" /><path d="M3 13l9 5 9-5" /></symbol>
+        <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></symbol>
+        <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17.5v.01" /></symbol>
+        <symbol id="i-clip" viewBox="0 0 24 24"><path d="M6 4v8a4 4 0 0 0 4 4h8" /><path d="M15 13l3 3-3 3" /></symbol>
+      </defs>
+    </svg>
+
+    <div class="app">
+      <header class="topbar">
+        <div class="topbar-group">
+          <div class="menu-wrap">
+            <button id="menuBtn" class="icon-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="mainMenu" title="メニュー">
+              <svg class="icon" aria-hidden="true"><use href="#i-menu" /></svg>
+            </button>
+            <div id="mainMenu" class="menu" role="menu" hidden>
+              <button type="button" role="menuitem" data-menu="new"><svg class="icon" aria-hidden="true"><use href="#i-new" /></svg>新規キャンバス…</button>
+              <button type="button" role="menuitem" data-menu="open"><svg class="icon" aria-hidden="true"><use href="#i-folder" /></svg>プロジェクトを開く…<kbd>Ctrl+O</kbd></button>
+              <button type="button" role="menuitem" data-menu="save"><svg class="icon" aria-hidden="true"><use href="#i-save" /></svg>プロジェクトを保存<kbd>Ctrl+S</kbd></button>
+              <button type="button" role="menuitem" data-menu="export"><svg class="icon" aria-hidden="true"><use href="#i-image" /></svg>PNG で書き出し…</button>
+              <hr />
+              <label class="menu-check"><input id="fingerDrawToggle" type="checkbox" />指で描画する</label>
+              <hr />
+              <button type="button" role="menuitem" data-menu="help"><svg class="icon" aria-hidden="true"><use href="#i-help" /></svg>操作ガイド</button>
+            </div>
+          </div>
+          <span id="docTitle" class="doc-title">無題</span>
+          <span id="saveStatus" class="save-status" aria-live="polite"></span>
         </div>
 
-        <div class="toolbar-center">
-          <button id="undoBtn" class="icon-btn" type="button" title="Undo">
-            <i class="fas fa-undo"></i>
+        <div class="topbar-group history-group">
+          <button id="undoBtn" class="icon-btn" type="button" title="元に戻す (Ctrl+Z)" aria-label="元に戻す">
+            <svg class="icon" aria-hidden="true"><use href="#i-undo" /></svg>
           </button>
-          <button id="redoBtn" class="icon-btn" type="button" title="Redo">
-            <i class="fas fa-redo"></i>
-          </button>
-          <div class="separator"></div>
-          <button id="saveBtn" class="icon-btn" type="button" title="Save PNG">
-            <i class="fas fa-download"></i>
+          <button id="redoBtn" class="icon-btn" type="button" title="やり直す (Ctrl+Shift+Z)" aria-label="やり直す">
+            <svg class="icon" aria-hidden="true"><use href="#i-redo" /></svg>
           </button>
         </div>
 
-        <div class="toolbar-right">
-          <button id="clearBtn" class="icon-btn danger" type="button" title="Clear Canvas">
-            <i class="fas fa-trash"></i>
+        <div class="topbar-group view-group">
+          <button id="rotateLeftBtn" class="icon-btn wide-only" type="button" title="左に回転 (Shift+R)" aria-label="左に回転">
+            <svg class="icon" aria-hidden="true"><use href="#i-rotate-left" /></svg>
+          </button>
+          <button id="rotateRightBtn" class="icon-btn wide-only" type="button" title="右に回転 (R)" aria-label="右に回転">
+            <svg class="icon" aria-hidden="true"><use href="#i-rotate-right" /></svg>
+          </button>
+          <button id="zoomOutBtn" class="icon-btn wide-only" type="button" title="縮小 (Ctrl+-)" aria-label="縮小">
+            <svg class="icon" aria-hidden="true"><use href="#i-minus" /></svg>
+          </button>
+          <button id="zoomLabel" class="zoom-label" type="button" title="100% にする">100%</button>
+          <button id="zoomInBtn" class="icon-btn wide-only" type="button" title="拡大 (Ctrl++)" aria-label="拡大">
+            <svg class="icon" aria-hidden="true"><use href="#i-plus" /></svg>
+          </button>
+          <button id="fitBtn" class="icon-btn" type="button" title="画面に合わせる (Ctrl+0)" aria-label="画面に合わせる">
+            <svg class="icon" aria-hidden="true"><use href="#i-fit" /></svg>
           </button>
         </div>
       </header>
 
-      <div class="main-workspace">
-        <aside class="left-toolbar">
-          <div class="tool-group icon-tools">
-            <button class="tool-btn is-active" data-tool="brush" type="button" title="Brush">
-              <i class="fas fa-paintbrush"></i>
-            </button>
-            <button class="tool-btn" data-tool="eraser" type="button" title="Eraser">
-              <i class="fas fa-eraser"></i>
-            </button>
-            <button class="tool-btn" data-tool="line" type="button" title="Line">
-              <i class="fas fa-minus"></i>
-            </button>
-            <button class="tool-btn" data-tool="rectangle" type="button" title="Rectangle">
-              <i class="far fa-square"></i>
-            </button>
-            <button class="tool-btn" data-tool="circle" type="button" title="Circle">
-              <i class="far fa-circle"></i>
-            </button>
-            <button class="tool-btn" data-tool="fill" type="button" title="Fill">
-              <i class="fas fa-fill-drip"></i>
-            </button>
-          </div>
-
-          <div class="tool-group control-group">
-            <label for="colorPicker">Color</label>
-            <input id="colorPicker" type="color" value="#1f2937" />
-            <div id="colorPreview" class="color-preview"></div>
-          </div>
-
-          <div class="tool-group control-group">
-            <label for="sizeSlider">Size</label>
-            <input id="sizeSlider" type="range" min="1" max="50" value="8" />
-            <span id="sizeValue">8</span>
-          </div>
-
-          <div class="tool-group control-group">
-            <label for="opacitySlider">Opacity</label>
-            <input id="opacitySlider" type="range" min="0" max="100" value="100" />
-            <span id="opacityValue">100%</span>
-          </div>
-
-          <div class="tool-group checkbox-group">
-            <label class="checkbox-label">
-              <input id="fillToggle" type="checkbox" />
-              Fill shape
-            </label>
-          </div>
-        </aside>
-
-        <div class="canvas-wrap">
-          <canvas id="paintCanvas" width="1280" height="720"></canvas>
+      <div id="optionBar" class="optionbar">
+        <label class="opt" data-opt="brushType">
+          <span>種類</span>
+          <select id="optBrushType">
+            <option value="pen">ペン</option>
+            <option value="air">エアブラシ</option>
+          </select>
+        </label>
+        <div class="opt" data-opt="size">
+          <label for="optSize">サイズ</label>
+          <input id="optSize" type="range" min="0" max="1000" step="1" />
+          <input id="optSizeNum" class="num" type="number" min="1" max="200" aria-label="サイズ (px)" />
         </div>
+        <div class="opt" data-opt="opacity">
+          <label for="optOpacity">不透明度</label>
+          <input id="optOpacity" type="range" min="1" max="100" />
+          <input id="optOpacityNum" class="num" type="number" min="1" max="100" aria-label="不透明度 (%)" />
+        </div>
+        <div class="opt" data-opt="strength">
+          <label for="optStrength">強さ</label>
+          <input id="optStrength" type="range" min="1" max="20" />
+          <output id="optStrengthValue" for="optStrength"></output>
+        </div>
+        <div class="opt" data-opt="stabilizer">
+          <label for="optStabilizer">手ぶれ補正</label>
+          <input id="optStabilizer" type="range" min="0" max="10" />
+          <output id="optStabilizerValue" for="optStabilizer"></output>
+        </div>
+        <label class="opt" data-opt="pressure"><input id="optPressure" type="checkbox" />筆圧</label>
+        <label class="opt" data-opt="fillShape"><input id="optFillShape" type="checkbox" />塗りつぶす</label>
+        <div class="opt" data-opt="tolerance">
+          <label for="optTolerance">許容範囲</label>
+          <input id="optTolerance" type="range" min="0" max="100" />
+          <output id="optToleranceValue" for="optTolerance"></output>
+        </div>
+        <div class="opt" data-opt="expand">
+          <label for="optExpand">領域拡張</label>
+          <input id="optExpand" type="range" min="0" max="3" />
+          <output id="optExpandValue" for="optExpand"></output>
+        </div>
+        <label class="opt" data-opt="reference">
+          <span>参照</span>
+          <select id="optReference">
+            <option value="layer">このレイヤー</option>
+            <option value="canvas">キャンバス全体</option>
+          </select>
+        </label>
+        <span class="opt hint" data-opt="shapeHint">Shift: 縦横比固定 / Alt: 中心から</span>
+        <span class="opt hint" data-opt="pickHint">タップした場所の色を取ります</span>
+        <span class="opt hint" data-opt="handHint">ドラッグでキャンバスを移動します</span>
+      </div>
 
-        <aside class="right-panel">
-          <div class="panel-header">
-            <h3>Layers</h3>
-            <button id="addLayerBtn" class="small-btn" type="button" title="Add Layer">
-              <i class="fas fa-plus"></i>
-            </button>
+      <div class="workspace">
+        <nav id="toolbar" class="toolbar sheet" aria-label="ツール">
+          <div class="sheet-header">
+            <h2>ツール</h2>
+            <button class="icon-btn sheet-close" type="button" data-close-sheet aria-label="閉じる"><svg class="icon" aria-hidden="true"><use href="#i-close" /></svg></button>
           </div>
-          <div id="layersList" class="layers-list"></div>
+          <div class="tool-list">
+            <button class="tool-btn" data-tool="brush" type="button" title="ブラシ (B)"><svg class="icon" aria-hidden="true"><use href="#i-brush" /></svg><span>ブラシ</span></button>
+            <button class="tool-btn" data-tool="eraser" type="button" title="消しゴム (E)"><svg class="icon" aria-hidden="true"><use href="#i-eraser" /></svg><span>消しゴム</span></button>
+            <button class="tool-btn" data-tool="blur" type="button" title="ぼかし (S)"><svg class="icon" aria-hidden="true"><use href="#i-blur" /></svg><span>ぼかし</span></button>
+            <button class="tool-btn" data-tool="fill" type="button" title="バケツ (G)"><svg class="icon" aria-hidden="true"><use href="#i-fill" /></svg><span>バケツ</span></button>
+            <button class="tool-btn" data-tool="eyedropper" type="button" title="スポイト (I / Alt を押している間)"><svg class="icon" aria-hidden="true"><use href="#i-eyedropper" /></svg><span>スポイト</span></button>
+            <button class="tool-btn" data-tool="line" type="button" title="直線 (L)"><svg class="icon" aria-hidden="true"><use href="#i-line" /></svg><span>直線</span></button>
+            <button class="tool-btn" data-tool="rect" type="button" title="四角形 (U)"><svg class="icon" aria-hidden="true"><use href="#i-rect" /></svg><span>四角形</span></button>
+            <button class="tool-btn" data-tool="ellipse" type="button" title="楕円 (O)"><svg class="icon" aria-hidden="true"><use href="#i-ellipse" /></svg><span>楕円</span></button>
+            <button class="tool-btn" data-tool="hand" type="button" title="移動 (H / Space を押している間)"><svg class="icon" aria-hidden="true"><use href="#i-hand" /></svg><span>移動</span></button>
+          </div>
+        </nav>
+
+        <main id="stage" class="stage" data-cursor="none">
+          <canvas id="viewCanvas" aria-label="キャンバス"></canvas>
+          <div id="toast" class="toast" role="status" aria-live="polite"></div>
+        </main>
+
+        <aside class="sidebar">
+          <section id="colorPanel" class="panel sheet" aria-labelledby="colorPanelTitle">
+            <div class="panel-header sheet-header">
+              <h2 id="colorPanelTitle">カラー</h2>
+              <button class="icon-btn sheet-close" type="button" data-close-sheet aria-label="閉じる"><svg class="icon" aria-hidden="true"><use href="#i-close" /></svg></button>
+            </div>
+            <div class="color-body">
+              <canvas id="colorWheel" class="color-wheel" aria-label="色相リングと彩度・明度"></canvas>
+              <div class="color-row">
+                <span id="currentSwatch" class="swatch current-swatch" aria-hidden="true"></span>
+                <label class="hex-field">
+                  <span>HEX</span>
+                  <input id="hexInput" type="text" inputmode="text" maxlength="7" spellcheck="false" autocomplete="off" />
+                </label>
+              </div>
+              <div class="swatch-section">
+                <h3>最近使った色</h3>
+                <div id="recentColors" class="swatches"></div>
+              </div>
+              <div class="swatch-section">
+                <div class="swatch-header">
+                  <h3>パレット</h3>
+                  <div class="swatch-actions">
+                    <button id="paletteAddBtn" class="small-btn" type="button" title="今の色をパレットに追加" aria-label="今の色をパレットに追加"><svg class="icon" aria-hidden="true"><use href="#i-plus" /></svg></button>
+                    <button id="paletteEditBtn" class="text-btn" type="button" aria-pressed="false">編集</button>
+                  </div>
+                </div>
+                <div id="paletteColors" class="swatches"></div>
+                <p id="paletteHint" class="panel-hint" hidden>消したい色をタップしてください</p>
+              </div>
+            </div>
+          </section>
+
+          <section id="layerPanel" class="panel sheet layer-panel" aria-labelledby="layerPanelTitle">
+            <div class="panel-header sheet-header">
+              <h2 id="layerPanelTitle">レイヤー</h2>
+              <div class="panel-header-actions">
+                <button id="addLayerBtn" class="small-btn" type="button" title="レイヤーを追加" aria-label="レイヤーを追加"><svg class="icon" aria-hidden="true"><use href="#i-plus" /></svg></button>
+                <button class="icon-btn sheet-close" type="button" data-close-sheet aria-label="閉じる"><svg class="icon" aria-hidden="true"><use href="#i-close" /></svg></button>
+              </div>
+            </div>
+            <div id="layerList" class="layer-list" role="listbox" aria-label="レイヤー一覧"></div>
+            <div id="layerProps" class="layer-props">
+              <div class="prop-row">
+                <label for="layerOpacity">不透明度</label>
+                <input id="layerOpacity" type="range" min="0" max="100" />
+                <output id="layerOpacityValue" for="layerOpacity"></output>
+              </div>
+              <div class="prop-row">
+                <label for="layerBlend">合成</label>
+                <select id="layerBlend"></select>
+              </div>
+              <div class="prop-checks">
+                <label><input id="layerClip" type="checkbox" />クリッピング</label>
+                <label><input id="layerAlphaLock" type="checkbox" />透明部分を保護</label>
+                <label><input id="layerLock" type="checkbox" />ロック</label>
+              </div>
+              <div class="layer-actions">
+                <button id="dupLayerBtn" class="small-btn" type="button" title="複製" aria-label="レイヤーを複製"><svg class="icon" aria-hidden="true"><use href="#i-copy" /></svg></button>
+                <button id="layerUpBtn" class="small-btn" type="button" title="上へ" aria-label="レイヤーを上へ"><svg class="icon" aria-hidden="true"><use href="#i-up" /></svg></button>
+                <button id="layerDownBtn" class="small-btn" type="button" title="下へ" aria-label="レイヤーを下へ"><svg class="icon" aria-hidden="true"><use href="#i-down" /></svg></button>
+                <button id="mergeDownBtn" class="small-btn" type="button" title="下のレイヤーと結合" aria-label="下のレイヤーと結合"><svg class="icon" aria-hidden="true"><use href="#i-merge" /></svg></button>
+                <button id="renameLayerBtn" class="small-btn" type="button" title="名前を変更" aria-label="レイヤー名を変更"><svg class="icon" aria-hidden="true"><use href="#i-rename" /></svg></button>
+                <button id="clearLayerBtn" class="small-btn" type="button" title="レイヤーを消去" aria-label="レイヤーを消去"><svg class="icon" aria-hidden="true"><use href="#i-clear" /></svg></button>
+                <button id="deleteLayerBtn" class="small-btn danger" type="button" title="レイヤーを削除" aria-label="レイヤーを削除"><svg class="icon" aria-hidden="true"><use href="#i-trash" /></svg></button>
+              </div>
+            </div>
+          </section>
         </aside>
       </div>
+
+      <nav class="bottombar" aria-label="クイック操作">
+        <button id="mUndoBtn" class="bar-btn" type="button" aria-label="元に戻す"><svg class="icon" aria-hidden="true"><use href="#i-undo" /></svg></button>
+        <button id="mRedoBtn" class="bar-btn" type="button" aria-label="やり直す"><svg class="icon" aria-hidden="true"><use href="#i-redo" /></svg></button>
+        <button class="bar-btn" type="button" data-open-sheet="toolbar" aria-label="ツール"><svg class="icon" aria-hidden="true"><use id="mToolIcon" href="#i-brush" /></svg></button>
+        <button class="bar-btn" type="button" data-open-sheet="colorPanel" aria-label="カラー"><span id="mColorSwatch" class="swatch bar-swatch"></span></button>
+        <button class="bar-btn" type="button" data-open-sheet="layerPanel" aria-label="レイヤー"><svg class="icon" aria-hidden="true"><use href="#i-layers" /></svg></button>
+      </nav>
     </div>
 
-    <script src="script.js"></script>
+    <div id="sheetBackdrop" class="sheet-backdrop" hidden></div>
+
+    <dialog id="newDialog" class="dialog">
+      <form method="dialog">
+        <h2>新規キャンバス</h2>
+        <label class="field">
+          <span>サイズ</span>
+          <select id="newPreset">
+            <option value="1280x720">1280 × 720 (HD)</option>
+            <option value="1920x1080">1920 × 1080 (フルHD)</option>
+            <option value="1080x1080">1080 × 1080 (正方形)</option>
+            <option value="1080x1920">1080 × 1920 (縦長)</option>
+            <option value="2048x2048">2048 × 2048</option>
+            <option value="custom">カスタム</option>
+          </select>
+        </label>
+        <div class="field-row">
+          <label class="field"><span>幅 (px)</span><input id="newWidth" type="number" min="16" max="4096" required /></label>
+          <label class="field"><span>高さ (px)</span><input id="newHeight" type="number" min="16" max="4096" required /></label>
+        </div>
+        <p class="dialog-note">今のキャンバスは閉じられます。残したい場合は先にプロジェクトを保存してください。</p>
+        <div class="dialog-actions">
+          <button type="button" class="text-btn" data-dialog-cancel>キャンセル</button>
+          <button type="submit" class="primary-btn" value="ok">作成</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="exportDialog" class="dialog">
+      <form method="dialog">
+        <h2>PNG で書き出し</h2>
+        <label class="field"><span>ファイル名</span><input id="exportName" type="text" required /></label>
+        <label class="check-field"><input id="exportTransparent" type="checkbox" />背景を透明にする</label>
+        <div class="dialog-actions">
+          <button type="button" class="text-btn" data-dialog-cancel>キャンセル</button>
+          <button type="submit" class="primary-btn" value="ok">書き出す</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="renameDialog" class="dialog">
+      <form method="dialog">
+        <h2>レイヤー名を変更</h2>
+        <label class="field"><span>名前</span><input id="renameInput" type="text" maxlength="60" required /></label>
+        <div class="dialog-actions">
+          <button type="button" class="text-btn" data-dialog-cancel>キャンセル</button>
+          <button type="submit" class="primary-btn" value="ok">変更</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="confirmDialog" class="dialog">
+      <form method="dialog">
+        <h2 id="confirmTitle"></h2>
+        <p id="confirmMessage" class="dialog-note"></p>
+        <div class="dialog-actions">
+          <button type="button" class="text-btn" data-dialog-cancel>キャンセル</button>
+          <button id="confirmOk" type="submit" class="primary-btn" value="ok">OK</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="helpDialog" class="dialog help-dialog">
+      <form method="dialog">
+        <h2>操作ガイド</h2>
+        <h3>タッチ操作</h3>
+        <ul>
+          <li>2本指でピンチ: 拡大・縮小、回転、移動</li>
+          <li>2本指タップ: 元に戻す</li>
+          <li>3本指タップ: やり直す</li>
+          <li>長押し: スポイト</li>
+          <li>ペンを使うと、指は移動と拡大だけに使われます(メニューで変更できます)</li>
+        </ul>
+        <h3>キーボード</h3>
+        <ul>
+          <li>B ブラシ / E 消しゴム / S ぼかし / G バケツ / I スポイト</li>
+          <li>L 直線 / U 四角形 / O 楕円 / H 移動</li>
+          <li>[ ] ブラシサイズ / R・Shift+R 回転</li>
+          <li>Space を押しながらドラッグ: 移動</li>
+          <li>Alt を押しながらクリック: スポイト</li>
+          <li>ホイール: 拡大・縮小 / Ctrl+0: 画面に合わせる</li>
+          <li>Ctrl+Z 元に戻す / Ctrl+Shift+Z・Ctrl+Y やり直す</li>
+          <li>Ctrl+S プロジェクトを保存 / Ctrl+O プロジェクトを開く</li>
+        </ul>
+        <div class="dialog-actions">
+          <button type="submit" class="primary-btn" value="ok">閉じる</button>
+        </div>
+      </form>
+    </dialog>
+
+    <input id="openFileInput" type="file" accept=".paintproj,application/json" hidden />
+
+    <script src="js/color.js"></script>
+    <script src="js/history.js"></script>
+    <script src="js/fill.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/app.js"></script>
   </body>
 </html>
