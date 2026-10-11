@@ -4,47 +4,101 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Paint App</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="app-shell">
-      <aside class="toolbar">
-        <h1>Paint</h1>
+    <div class="app-container">
+      <!-- Top Toolbar -->
+      <header class="top-toolbar">
+        <div class="toolbar-left">
+          <h1>Paint</h1>
+        </div>
+        <div class="toolbar-center">
+          <button id="undoBtn" class="icon-btn" title="Undo (Ctrl+Z)">
+            <i class="fas fa-undo"></i>
+          </button>
+          <button id="redoBtn" class="icon-btn" title="Redo (Ctrl+Y)">
+            <i class="fas fa-redo"></i>
+          </button>
+          <div class="separator"></div>
+          <button id="saveBtn" class="icon-btn" title="Save as PNG">
+            <i class="fas fa-download"></i>
+          </button>
+        </div>
+        <div class="toolbar-right">
+          <button id="clearBtn" class="icon-btn danger" title="Clear Canvas">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </header>
 
-        <div class="tool-group">
-          <label for="colorPicker">Color</label>
-          <div class="color-row">
-            <input id="colorPicker" type="color" value="#1f2937" aria-label="Select color" />
-            <span id="colorValue">#1F2937</span>
+      <div class="main-workspace">
+        <!-- Left Toolbar - Tools -->
+        <aside class="left-toolbar">
+          <div class="tool-group">
+            <button class="tool-btn is-active" data-tool="brush" title="Brush">
+              <i class="fas fa-paintbrush"></i>
+            </button>
+            <button class="tool-btn" data-tool="eraser" title="Eraser">
+              <i class="fas fa-eraser"></i>
+            </button>
+            <button class="tool-btn" data-tool="line" title="Line">
+              <i class="fas fa-minus"></i>
+            </button>
+            <button class="tool-btn" data-tool="rectangle" title="Rectangle">
+              <i class="far fa-square"></i>
+            </button>
+            <button class="tool-btn" data-tool="circle" title="Circle">
+              <i class="far fa-circle"></i>
+            </button>
+            <button class="tool-btn" data-tool="fill" title="Fill">
+              <i class="fas fa-fill-drip"></i>
+            </button>
           </div>
-        </div>
 
-        <div class="tool-group">
-          <label for="sizeSlider">Brush size</label>
-          <input id="sizeSlider" type="range" min="2" max="40" value="8" />
-          <div class="value-row">
-            <span>Small</span>
-            <strong id="sizeValue">8 px</strong>
-            <span>Large</span>
+          <div class="tool-group">
+            <label for="colorPicker" class="color-label">Color</label>
+            <input id="colorPicker" type="color" value="#1f2937" />
+            <div id="colorPreview" class="color-preview"></div>
           </div>
+
+          <div class="tool-group">
+            <label for="sizeSlider">Size</label>
+            <input id="sizeSlider" type="range" min="1" max="50" value="8" />
+            <span id="sizeValue">8</span>
+          </div>
+
+          <div class="tool-group">
+            <label for="opacitySlider">Opacity</label>
+            <input id="opacitySlider" type="range" min="0" max="100" value="100" />
+            <span id="opacityValue">100%</span>
+          </div>
+
+          <div class="tool-group">
+            <label class="checkbox-label">
+              <input id="fillToggle" type="checkbox" />
+              Fill shape
+            </label>
+          </div>
+        </aside>
+
+        <!-- Canvas Area -->
+        <div class="canvas-container">
+          <canvas id="paintCanvas" width="1280" height="720"></canvas>
         </div>
 
-        <div class="tool-group tool-buttons">
-          <button class="tool-button is-active" data-mode="brush" type="button">Brush</button>
-          <button class="tool-button" data-mode="eraser" type="button">Eraser</button>
-        </div>
-
-        <div class="tool-group action-buttons">
-          <button id="undoBtn" type="button">Undo</button>
-          <button id="redoBtn" type="button">Redo</button>
-          <button id="clearBtn" type="button" class="danger">Clear</button>
-          <button id="saveBtn" type="button">Save PNG</button>
-        </div>
-      </aside>
-
-      <main class="workspace">
-        <canvas id="paintCanvas" width="960" height="620" aria-label="Paint canvas"></canvas>
-      </main>
+        <!-- Right Panel - Layers -->
+        <aside class="right-panel">
+          <div class="panel-header">
+            <h3>Layers</h3>
+            <button id="addLayerBtn" class="small-btn" title="Add layer">
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
+          <div id="layersList" class="layers-list"></div>
+        </aside>
+      </div>
     </div>
 
     <script src="script.js"></script>
