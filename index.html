@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Paint App</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="toolbar">
+        <h1>Paint</h1>
+
+        <div class="tool-group">
+          <label for="colorPicker">Color</label>
+          <div class="color-row">
+            <input id="colorPicker" type="color" value="#1f2937" aria-label="Select color" />
+            <span id="colorValue">#1F2937</span>
+          </div>
+        </div>
+
+        <div class="tool-group">
+          <label for="sizeSlider">Brush size</label>
+          <input id="sizeSlider" type="range" min="2" max="40" value="8" />
+          <div class="value-row">
+            <span>Small</span>
+            <strong id="sizeValue">8 px</strong>
+            <span>Large</span>
+          </div>
+        </div>
+
+        <div class="tool-group tool-buttons">
+          <button class="tool-button is-active" data-mode="brush" type="button">Brush</button>
+          <button class="tool-button" data-mode="eraser" type="button">Eraser</button>
+        </div>
+
+        <div class="tool-group action-buttons">
+          <button id="undoBtn" type="button">Undo</button>
+          <button id="redoBtn" type="button">Redo</button>
+          <button id="clearBtn" type="button" class="danger">Clear</button>
+          <button id="saveBtn" type="button">Save PNG</button>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <canvas id="paintCanvas" width="960" height="620" aria-label="Paint canvas"></canvas>
+      </main>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
