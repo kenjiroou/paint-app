@@ -1390,24 +1390,50 @@
       toast('配置先のレイヤーがロックされています');
       return;
     }
-    if (t.tempLayer) {
-      drawFloating(layer.ctx, t, layer.alphaLock);
-      const before = t.beforeStructure;
-      const after = snapshotStructure();
-      history.push({
-        bytes: doc.width * doc.height * 4,
-        undo: () => restoreStructure(before),
-        redo: () => restoreStructure(after),
-      });
-    } else {
-      const before = t.beforePixels || layer.ctx.getImageData(0, 0, doc.width, doc.height);
-      drawFloating(layer.ctx, t, layer.alphaLock);
-      const after = layer.ctx.getImageData(0, 0, doc.width, doc.height);
-      pushPixelEntry(layer, { x: 0, y: 0, w: doc.width, h: doc.height }, before, after);
+    if (t.mode === 'import') {
+      applyImport(t, layer);
+      return;
     }
+    const before = t.beforePixels;
+    drawFloating(layer.ctx, t, layer.alphaLock);
+    const after = layer.ctx.getImageData(0, 0, doc.width, doc.height);
+    pushPixelEntry(layer, { x: 0, y: 0, w: doc.width, h: doc.height }, before, after);
     pixelsChanged(layer);
     endTransform();
-    toast(t.mode === 'import' ? `「${layer.name}」に画像を配置しました` : '変形しました');
+    toast('変形しました');
+  }
+
+  // A placed image is a tracing guide: lock its layer so the next stroke does
+  // not land on it, and give the focus back to the layer selected before.
+  function applyImport(t, layer) {
+    const beforePixels = t.tempLayer ? null : layer.ctx.getImageData(0, 0, doc.width, doc.height);
+    drawFloating(layer.ctx, t, layer.alphaLock);
+    const afterPixels = t.tempLayer ? null : layer.ctx.getImageData(0, 0, doc.width, doc.height);
+
+    layer.locked = true;
+    const previous = doc.layers.find((l) => l.id === t.originalActiveId) || layer;
+    doc.activeId = previous.id;
+    const beforeStructure = t.beforeStructure;
+    const afterStructure = snapshotStructure();
+
+    history.push({
+      bytes: doc.width * doc.height * 4 * (beforePixels ? 2 : 1),
+      undo() {
+        if (beforePixels) layer.ctx.putImageData(beforePixels, 0, 0);
+        restoreStructure(beforeStructure);
+        pixelsChanged(layer);
+      },
+      redo() {
+        if (afterPixels) layer.ctx.putImageData(afterPixels, 0, 0);
+        restoreStructure(afterStructure);
+        pixelsChanged(layer);
+      },
+    });
+    pixelsChanged(layer);
+    endTransform();
+
+    const focus = previous === layer ? '' : `描画先は「${previous.name}」に戻しました。`;
+    toast(`「${layer.name}」に画像を配置してロックしました。${focus}`);
   }
 
   function cancelTransform() {
@@ -2541,7 +2567,7 @@
     toastEl.textContent = message;
     toastEl.classList.add('is-visible');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toastEl.classList.remove('is-visible'), 2400);
+    toastTimer = setTimeout(() => toastEl.classList.remove('is-visible'), Math.max(2400, message.length * 90));
   }
 
   const menu = $('mainMenu');
