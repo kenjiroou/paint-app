@@ -1,0 +1,186 @@
+:root {
+  --bg: #f3f4f6;
+  --panel: #ffffff;
+  --panel-border: #dfe3ea;
+  --accent: #2f6fed;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --shadow: 0 18px 45px rgba(17, 24, 39, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  font-family: "Segoe UI", sans-serif;
+  background: linear-gradient(135deg, #eef2ff 0%, #f9fafb 100%);
+  color: var(--text);
+}
+
+body {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.app-shell {
+  width: min(1200px, 100%);
+  min-height: 760px;
+  display: flex;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+
+.toolbar {
+  width: 280px;
+  background: var(--panel);
+  border-right: 1px solid var(--panel-border);
+  padding: 24px 18px;
+}
+
+h1 {
+  margin: 0 0 20px;
+  font-size: 2rem;
+}
+
+.tool-group {
+  margin-bottom: 22px;
+}
+
+label {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.color-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+input[type="color"] {
+  width: 72px;
+  height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+#colorValue {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.value-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+#sizeValue {
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.tool-buttons,
+.action-buttons {
+  display: grid;
+  gap: 12px;
+}
+
+button {
+  border: 1px solid var(--panel-border);
+  background: #f8fafc;
+  color: var(--text);
+  border-radius: 12px;
+  padding: 11px 14px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  border-color: #c7d2fe;
+  box-shadow: 0 8px 18px rgba(99, 102, 241, 0.1);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.tool-button {
+  background: #eef2ff;
+}
+
+.tool-button.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.danger {
+  background: #fff1f2;
+  border-color: #fecdd3;
+}
+
+.workspace {
+  flex: 1;
+  padding: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #f9fafb 0%, #eef2ff 100%);
+}
+
+#paintCanvas {
+  width: min(100%, 960px);
+  height: min(70vh, 620px);
+  background: white;
+  border: 1px solid #dfe3ea;
+  border-radius: 16px;
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.12);
+  cursor: crosshair;
+  touch-action: none;
+}
+
+@media (max-width: 860px) {
+  .app-shell {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .toolbar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--panel-border);
+  }
+
+  .workspace {
+    padding: 14px;
+  }
+}
