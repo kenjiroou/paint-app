@@ -28,9 +28,7 @@ let historyIndex = -1;
 
 function hexToRgba(hex, alpha) {
   const value = hex.replace('#', '');
-  const full = value.length === 3
-    ? value.split('').map((char) => char + char).join('')
-    : value;
+  const full = value.length === 3 ? value.split('').map((char) => char + char).join('') : value;
   const num = Number.parseInt(full, 16);
   const r = (num >> 16) & 255;
   const g = (num >> 8) & 255;
@@ -38,13 +36,11 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-function createLayer(name) {
+function createLayer(name = 'Layer') {
   const layerCanvas = document.createElement('canvas');
   layerCanvas.width = canvas.width;
   layerCanvas.height = canvas.height;
   const layerContext = layerCanvas.getContext('2d');
-
-  layerContext.clearRect(0, 0, layerCanvas.width, layerCanvas.height);
 
   return {
     id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -61,12 +57,6 @@ function getActiveLayer() {
   return layers[activeLayerIndex] || null;
 }
 
-function syncToolButtons() {
-  toolButtons.forEach((button) => {
-    button.classList.toggle('is-active', button.dataset.tool === selectedTool);
-  });
-}
-
 function updateColorUI() {
   colorPreview.style.background = currentColor;
 }
@@ -77,6 +67,12 @@ function updateSizeUI() {
 
 function updateOpacityUI() {
   opacityValue.textContent = `${Math.round(opacity * 100)}%`;
+}
+
+function syncToolButtons() {
+  toolButtons.forEach((button) => {
+    button.classList.toggle('is-active', button.dataset.tool === selectedTool);
+  });
 }
 
 function renderCanvas() {
@@ -117,10 +113,9 @@ function renderLayersList() {
     `;
 
     item.addEventListener('click', (event) => {
-      const actionTarget = event.target.closest('[data-action]');
-      if (actionTarget) {
-        const action = actionTarget.dataset.action;
-        handleLayerAction(index, action);
+      const actionButton = event.target.closest('[data-action]');
+      if (actionButton) {
+        handleLayerAction(index, actionButton.dataset.action);
         return;
       }
       activeLayerIndex = index;
@@ -156,9 +151,8 @@ function handleLayerAction(index, action) {
       }
       break;
     case 'duplicate': {
-      const original = layers[index];
-      const clone = createLayer(`${original.name} copy`);
-      clone.context.drawImage(original.canvas, 0, 0);
+      const clone = createLayer(`${layer.name} copy`);
+      clone.context.drawImage(layer.canvas, 0, 0);
       layers.splice(index + 1, 0, clone);
       activeLayerIndex = index + 1;
       break;
@@ -177,6 +171,15 @@ function handleLayerAction(index, action) {
   renderCanvas();
 }
 
+function addLayer() {
+  const layer = createLayer(`Layer ${layers.length + 1}`);
+  layers.push(layer);
+  activeLayerIndex = layers.length - 1;
+  pushHistory();
+  renderLayersList();
+  renderCanvas();
+}
+
 function getPointerPosition(event) {
   const rect = canvas.getBoundingClientRect();
   const scaleX = canvas.width / rect.width;
@@ -188,46 +191,14 @@ function getPointerPosition(event) {
   };
 }
 
-function addLayer() {
-  const layer = createLayer(`Layer ${layers.length + 1}`);
-  layers.push(layer);
-  activeLayerIndex = layers.length - 1;
-  pushHistory();
-  renderLayersList();
-  renderCanvas();
-}
-
-function commitHistory() {
-  pushHistory();
-  updateUndoRedoState();
-}
-
 function captureSnapshot() {
-  return layers.map((layer) => {
-    const data = layer.canvas.toDataURL('image/png');
-    return {
-      name: layer.name,
-      visible: layer.visible,
-      locked: layer.locked,
-      opacity: layer.opacity,
-      data,
-    };
-  });
-}
-
-function pushHistory() {
-  const snapshot = captureSnapshot();
-  const previous = history[historyIndex];
-
-  if (previous && JSON.stringify(previous) === JSON.stringify(snapshot)) {
-    return;
-  }
-
-  history = history.slice(0, historyIndex + 1);
-  history.push(snapshot);
-  if (history.length > 35) history.shift();
-  historyIndex = history.length - 1;
-  updateUndoRedoState();
+  return layers.map((layer) => ({
+    name: layer.name,
+    visible: layer.visible,
+    locked: layer.locked,
+    opacity: layer.opacity,
+    data: layer.canvas.toDataURL('image/png'),
+  }));
 }
 
 function applySnapshot(snapshot) {
@@ -250,19 +221,32 @@ function applySnapshot(snapshot) {
   renderLayersList();
 }
 
+function pushHistory() {
+  const snapshot = captureSnapshot();
+  const previous = history[historyIndex];
+
+  if (previous && JSON.stringify(previous) === JSON.stringify(snapshot)) {
+    return;
+  }
+
+  history = history.slice(0, historyIndex + 1);
+  history.push(snapshot);
+  if (history.length > 35) history.shift();
+  historyIndex = history.length - 1;
+  updateUndoRedoState();
+}
+
 function undo() {
   if (historyIndex <= 0) return;
   historyIndex -= 1;
-  const snapshot = history[historyIndex];
-  applySnapshot(snapshot);
+  applySnapshot(history[historyIndex]);
   updateUndoRedoState();
 }
 
 function redo() {
   if (historyIndex >= history.length - 1) return;
   historyIndex += 1;
-  const snapshot = history[historyIndex];
-  applySnapshot(snapshot);
+  applySnapshot(history[historyIndex]);
   updateUndoRedoState();
 }
 
@@ -271,27 +255,24 @@ function updateUndoRedoState() {
   redoBtn.disabled = historyIndex >= history.length - 1;
 }
 
-function setBrushStyle(context, strokeColor) {
-  context.lineCap = 'round';
-  context.lineJoin = 'round';
-  context.strokeStyle = strokeColor;
-  context.lineWidth = brushSize;
-}
-
 function drawBrushStroke(start, end) {
   const layer = getActiveLayer();
   if (!layer || layer.locked) return;
 
   const context = layer.context;
   context.save();
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+  context.lineWidth = brushSize;
+
   if (selectedTool === 'eraser') {
     context.globalCompositeOperation = 'destination-out';
     context.lineWidth = brushSize * 2;
   } else {
     context.globalCompositeOperation = 'source-over';
-    context.lineWidth = brushSize;
     context.strokeStyle = hexToRgba(currentColor, opacity);
   }
+
   context.beginPath();
   context.moveTo(start.x, start.y);
   context.lineTo(end.x, end.y);
@@ -299,14 +280,13 @@ function drawBrushStroke(start, end) {
   context.restore();
 }
 
-function drawShapeOnContext(context, start, end, fillShape) {
-  const strokeColor = hexToRgba(currentColor, opacity);
-  const lineWidth = brushSize;
-
+function drawShapeOnLayer(context, start, end, filled) {
   context.save();
-  context.lineWidth = lineWidth;
-  context.strokeStyle = strokeColor;
-  context.fillStyle = strokeColor;
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+  context.lineWidth = brushSize;
+  context.strokeStyle = hexToRgba(currentColor, opacity);
+  context.fillStyle = hexToRgba(currentColor, opacity);
 
   if (selectedTool === 'line') {
     context.beginPath();
@@ -320,7 +300,8 @@ function drawShapeOnContext(context, start, end, fillShape) {
     const y = Math.min(start.y, end.y);
     const width = Math.abs(end.x - start.x);
     const height = Math.abs(end.y - start.y);
-    if (fillShape) {
+
+    if (filled) {
       context.fillRect(x, y, width, height);
     } else {
       context.strokeRect(x, y, width, height);
@@ -331,11 +312,10 @@ function drawShapeOnContext(context, start, end, fillShape) {
     const dx = end.x - start.x;
     const dy = end.y - start.y;
     const radius = Math.sqrt(dx * dx + dy * dy);
-    const cx = start.x;
-    const cy = start.y;
+
     context.beginPath();
-    context.arc(cx, cy, radius, 0, Math.PI * 2);
-    if (fillShape) {
+    context.arc(start.x, start.y, radius, 0, Math.PI * 2);
+    if (filled) {
       context.fill();
     } else {
       context.stroke();
@@ -347,21 +327,21 @@ function drawShapeOnContext(context, start, end, fillShape) {
 
 function previewShape(start, end) {
   renderCanvas();
+  const activeLayer = getActiveLayer();
+  if (!activeLayer || activeLayer.locked) return;
 
-  const active = getActiveLayer();
-  if (!active || active.locked) return;
-
-  const previewCtx = ctx;
-  previewCtx.save();
-  previewCtx.lineWidth = brushSize;
-  previewCtx.strokeStyle = hexToRgba(currentColor, opacity);
-  previewCtx.fillStyle = hexToRgba(currentColor, opacity);
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = brushSize;
+  ctx.strokeStyle = hexToRgba(currentColor, opacity);
+  ctx.fillStyle = hexToRgba(currentColor, opacity);
 
   if (selectedTool === 'line') {
-    previewCtx.beginPath();
-    previewCtx.moveTo(start.x, start.y);
-    previewCtx.lineTo(end.x, end.y);
-    previewCtx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.stroke();
   }
 
   if (selectedTool === 'rectangle') {
@@ -369,10 +349,11 @@ function previewShape(start, end) {
     const y = Math.min(start.y, end.y);
     const width = Math.abs(end.x - start.x);
     const height = Math.abs(end.y - start.y);
+
     if (fillToggle.checked) {
-      previewCtx.fillRect(x, y, width, height);
+      ctx.fillRect(x, y, width, height);
     } else {
-      previewCtx.strokeRect(x, y, width, height);
+      ctx.strokeRect(x, y, width, height);
     }
   }
 
@@ -380,82 +361,78 @@ function previewShape(start, end) {
     const dx = end.x - start.x;
     const dy = end.y - start.y;
     const radius = Math.sqrt(dx * dx + dy * dy);
-    previewCtx.beginPath();
-    previewCtx.arc(start.x, start.y, radius, 0, Math.PI * 2);
+
+    ctx.beginPath();
+    ctx.arc(start.x, start.y, radius, 0, Math.PI * 2);
     if (fillToggle.checked) {
-      previewCtx.fill();
+      ctx.fill();
     } else {
-      previewCtx.stroke();
+      ctx.stroke();
     }
   }
 
-  previewCtx.restore();
+  ctx.restore();
 }
 
 function onPointerDown(event) {
-  const pos = getPointerPosition(event);
-  const layer = getActiveLayer();
-  if (!layer || layer.locked) return;
+  const point = getPointerPosition(event);
+  const activeLayer = getActiveLayer();
+  if (!activeLayer || activeLayer.locked) return;
 
   if (selectedTool === 'fill') {
-    layer.context.fillStyle = hexToRgba(currentColor, opacity);
-    layer.context.fillRect(0, 0, layer.canvas.width, layer.canvas.height);
-    commitHistory();
+    activeLayer.context.fillStyle = hexToRgba(currentColor, opacity);
+    activeLayer.context.fillRect(0, 0, activeLayer.canvas.width, activeLayer.canvas.height);
+    pushHistory();
     renderCanvas();
     return;
   }
 
   if (selectedTool === 'brush' || selectedTool === 'eraser') {
-    drawingSession = { type: 'stroke', last: pos };
-    drawBrushStroke(pos, pos);
+    drawingSession = { type: 'stroke', last: point };
+    drawBrushStroke(point, point);
     renderCanvas();
     return;
   }
 
-  drawingSession = { type: 'shape', start: pos, current: pos };
+  drawingSession = { type: 'shape', start: point, end: point };
 }
 
 function onPointerMove(event) {
   if (!drawingSession) return;
-
-  const pos = getPointerPosition(event);
+  const point = getPointerPosition(event);
 
   if (drawingSession.type === 'stroke') {
-    drawBrushStroke(drawingSession.last, pos);
-    drawingSession.last = pos;
+    drawBrushStroke(drawingSession.last, point);
+    drawingSession.last = point;
     renderCanvas();
     return;
   }
 
-  if (drawingSession.type === 'shape') {
-    drawingSession.current = pos;
-    previewShape(drawingSession.start, pos);
-  }
+  drawingSession.end = point;
+  previewShape(drawingSession.start, point);
 }
 
 function onPointerUp() {
   if (!drawingSession) return;
 
   if (drawingSession.type === 'shape') {
-    const layer = getActiveLayer();
-    if (layer && !layer.locked) {
-      const ctxLayer = layer.context;
-      drawShapeOnContext(ctxLayer, drawingSession.start, drawingSession.current, fillToggle.checked);
-      renderCanvas();
+    const activeLayer = getActiveLayer();
+    if (activeLayer && !activeLayer.locked) {
+      drawShapeOnLayer(activeLayer.context, drawingSession.start, drawingSession.end, fillToggle.checked);
     }
   }
 
-  commitHistory();
+  pushHistory();
+  renderCanvas();
   drawingSession = null;
 }
 
 function clearActiveLayer() {
   const layer = getActiveLayer();
   if (!layer || layer.locked) return;
-
   layer.context.clearRect(0, 0, layer.canvas.width, layer.canvas.height);
+  pushHistory();
   renderCanvas();
-  commitHistory();
 }
 
 function savePng() {
@@ -481,7 +458,7 @@ function savePng() {
   link.click();
 }
 
-function init() {
+function bindEvents() {
   colorPicker.addEventListener('input', (event) => {
     currentColor = event.target.value;
     updateColorUI();
@@ -526,280 +503,20 @@ function init() {
       redo();
     }
   });
+}
 
+function init() {
   layers = [createLayer('Layer 1')];
   activeLayerIndex = 0;
-  renderLayersList();
-  renderCanvas();
   updateColorUI();
   updateSizeUI();
   updateOpacityUI();
   syncToolButtons();
+  renderLayersList();
+  renderCanvas();
+  bindEvents();
   pushHistory();
   updateUndoRedoState();
 }
 
 init();
-
-window.addEventListener('resize', renderCanvas);
-
-export { createLayer, layers };
-
-// End of file
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-n
