@@ -48,6 +48,10 @@
         <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z" /><path d="M3 13l9 5 9-5" /></symbol>
         <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></symbol>
         <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17.5v.01" /></symbol>
+        <symbol id="i-import" viewBox="0 0 24 24"><rect x="3" y="5" width="14" height="14" rx="2" /><circle cx="8" cy="10" r="1.5" /><path d="M17 15l-4-4-8 8" /><path d="M20 3v6M17 6h6" /></symbol>
+        <symbol id="i-transform" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" /><path d="M3 3h4M3 3v4M21 3h-4M21 3v4M3 21h4M3 21v-4M21 21h-4M21 21v-4" /></symbol>
+        <symbol id="i-flip-h" viewBox="0 0 24 24"><path d="M12 3v18" /><path d="M9 7L4 17h5zM15 7l5 10h-5z" /></symbol>
+        <symbol id="i-flip-v" viewBox="0 0 24 24"><path d="M3 12h18" /><path d="M7 9L17 4v5zM7 15l10 5v-5z" /></symbol>
         <symbol id="i-clip" viewBox="0 0 24 24"><path d="M6 4v8a4 4 0 0 0 4 4h8" /><path d="M15 13l3 3-3 3" /></symbol>
       </defs>
     </svg>
@@ -63,6 +67,7 @@
               <button type="button" role="menuitem" data-menu="new"><svg class="icon" aria-hidden="true"><use href="#i-new" /></svg>新規キャンバス…</button>
               <button type="button" role="menuitem" data-menu="open"><svg class="icon" aria-hidden="true"><use href="#i-folder" /></svg>プロジェクトを開く…<kbd>Ctrl+O</kbd></button>
               <button type="button" role="menuitem" data-menu="save"><svg class="icon" aria-hidden="true"><use href="#i-save" /></svg>プロジェクトを保存<kbd>Ctrl+S</kbd></button>
+              <button type="button" role="menuitem" data-menu="import"><svg class="icon" aria-hidden="true"><use href="#i-import" /></svg>画像を取り込む…</button>
               <button type="button" role="menuitem" data-menu="export"><svg class="icon" aria-hidden="true"><use href="#i-image" /></svg>PNG で書き出し…</button>
               <hr />
               <label class="menu-check"><input id="fingerDrawToggle" type="checkbox" />指で描画する</label>
@@ -153,6 +158,31 @@
         <span class="opt hint" data-opt="shapeHint">Shift: 縦横比固定 / Alt: 中心から</span>
         <span class="opt hint" data-opt="pickHint">タップした場所の色を取ります</span>
         <span class="opt hint" data-opt="handHint">ドラッグでキャンバスを移動します</span>
+
+        <div id="transformBar" class="transform-bar" hidden>
+          <label id="tfTargetField" class="opt">
+            <span>配置先</span>
+            <select id="tfTarget"></select>
+          </label>
+          <div class="opt">
+            <label for="tfScale">大きさ</label>
+            <input id="tfScale" class="num" type="number" min="1" max="2000" step="1" />
+            <span>%</span>
+          </div>
+          <div class="opt">
+            <label for="tfAngle">角度</label>
+            <input id="tfAngle" class="num" type="number" min="-180" max="180" step="1" />
+            <span>°</span>
+          </div>
+          <div class="opt tf-buttons">
+            <button id="tfRotLeft" class="small-btn" type="button" title="左に90°回転" aria-label="左に90°回転"><svg class="icon" aria-hidden="true"><use href="#i-rotate-left" /></svg></button>
+            <button id="tfRotRight" class="small-btn" type="button" title="右に90°回転" aria-label="右に90°回転"><svg class="icon" aria-hidden="true"><use href="#i-rotate-right" /></svg></button>
+            <button id="tfFlipH" class="small-btn" type="button" title="左右反転" aria-label="左右反転" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-flip-h" /></svg></button>
+            <button id="tfFlipV" class="small-btn" type="button" title="上下反転" aria-label="上下反転" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-flip-v" /></svg></button>
+            <button id="tfFit" class="text-btn" type="button">キャンバスに合わせる</button>
+          </div>
+          <span class="opt hint">ドラッグで移動、角で拡大・縮小、外側か上の丸で回転(Shift で 15° 刻み)</span>
+        </div>
       </div>
 
       <div class="workspace">
@@ -177,6 +207,10 @@
         <main id="stage" class="stage" data-cursor="none">
           <canvas id="viewCanvas" aria-label="キャンバス"></canvas>
           <div id="toast" class="toast" role="status" aria-live="polite"></div>
+          <div id="transformActions" class="stage-actions" hidden>
+            <button id="tfCancel" class="text-btn" type="button">キャンセル</button>
+            <button id="tfApply" class="primary-btn" type="button">確定</button>
+          </div>
         </main>
 
         <aside class="sidebar">
@@ -240,6 +274,7 @@
                 <button id="dupLayerBtn" class="small-btn" type="button" title="複製" aria-label="レイヤーを複製"><svg class="icon" aria-hidden="true"><use href="#i-copy" /></svg></button>
                 <button id="layerUpBtn" class="small-btn" type="button" title="上へ" aria-label="レイヤーを上へ"><svg class="icon" aria-hidden="true"><use href="#i-up" /></svg></button>
                 <button id="layerDownBtn" class="small-btn" type="button" title="下へ" aria-label="レイヤーを下へ"><svg class="icon" aria-hidden="true"><use href="#i-down" /></svg></button>
+                <button id="transformLayerBtn" class="small-btn" type="button" title="変形(大きさ・向き)" aria-label="レイヤーを変形"><svg class="icon" aria-hidden="true"><use href="#i-transform" /></svg></button>
                 <button id="mergeDownBtn" class="small-btn" type="button" title="下のレイヤーと結合" aria-label="下のレイヤーと結合"><svg class="icon" aria-hidden="true"><use href="#i-merge" /></svg></button>
                 <button id="renameLayerBtn" class="small-btn" type="button" title="名前を変更" aria-label="レイヤー名を変更"><svg class="icon" aria-hidden="true"><use href="#i-rename" /></svg></button>
                 <button id="clearLayerBtn" class="small-btn" type="button" title="レイヤーを消去" aria-label="レイヤーを消去"><svg class="icon" aria-hidden="true"><use href="#i-clear" /></svg></button>
@@ -343,6 +378,13 @@
           <li>Ctrl+Z 元に戻す / Ctrl+Shift+Z・Ctrl+Y やり直す</li>
           <li>Ctrl+S プロジェクトを保存 / Ctrl+O プロジェクトを開く</li>
         </ul>
+        <h3>画像の取り込み・変形</h3>
+        <ul>
+          <li>メニューの「画像を取り込む」で画像を選び、配置先を選んで確定します</li>
+          <li>画像の内側をドラッグ: 移動 / 角: 拡大・縮小 / 外側か上の丸: 回転</li>
+          <li>Enter: 確定 / Esc: キャンセル</li>
+          <li>レイヤーの「変形」ボタンで、配置したあとも大きさと向きを変えられます</li>
+        </ul>
         <div class="dialog-actions">
           <button type="submit" class="primary-btn" value="ok">閉じる</button>
         </div>
@@ -350,6 +392,7 @@
     </dialog>
 
     <input id="openFileInput" type="file" accept=".paintproj,application/json" hidden />
+    <input id="imageFileInput" type="file" accept="image/*" hidden />
 
     <script src="js/color.js"></script>
     <script src="js/history.js"></script>

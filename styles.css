@@ -329,6 +329,44 @@ input[type="range"] {
   accent-color: var(--accent);
 }
 
+/* Image placement / transform mode */
+
+.optionbar.is-transforming > [data-opt] {
+  display: none !important;
+}
+
+.transform-bar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-shrink: 0;
+}
+
+.transform-bar .num {
+  width: 72px;
+}
+
+.tf-buttons {
+  gap: 4px;
+}
+
+.tf-buttons .small-btn[aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.is-transforming .toolbar,
+.is-transforming .layer-panel,
+.is-transforming .history-group,
+.is-transforming .bottombar [data-open-sheet="toolbar"],
+.is-transforming .bottombar [data-open-sheet="layerPanel"],
+.is-transforming #mUndoBtn,
+.is-transforming #mRedoBtn {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
 /* ---------- Workspace ---------- */
 
 .workspace {
@@ -405,6 +443,37 @@ input[type="range"] {
 
 .stage[data-cursor="grabbing"] {
   cursor: grabbing;
+}
+
+.stage[data-cursor="move"] {
+  cursor: move;
+}
+
+.stage[data-cursor="resize"] {
+  cursor: nwse-resize;
+}
+
+.stage[data-cursor="rotate"] {
+  cursor: grab;
+}
+
+.stage-actions {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.stage-actions .text-btn,
+.stage-actions .primary-btn {
+  min-height: 36px;
+  padding: 6px 16px;
 }
 
 #viewCanvas {

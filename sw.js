@@ -1,5 +1,5 @@
 // Caches the app shell so the app opens offline.
-const CACHE = 'paint-app-v1';
+const CACHE = 'paint-app-v2';
 const ASSETS = [
   './',
   'index.html',

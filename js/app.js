@@ -306,6 +306,14 @@
   // The stroke is drawn opaque into the buffer and the opacity is applied once,
   // so overlapping segments do not create darker spots.
   function layerSource(layer, withLive) {
+    if (withLive && transformSession && transformSession.layer === layer) {
+      liveCtx.globalCompositeOperation = 'copy';
+      liveCtx.globalAlpha = 1;
+      liveCtx.drawImage(layer.canvas, 0, 0);
+      liveCtx.globalCompositeOperation = 'source-over';
+      drawFloating(liveCtx, transformSession, layer.alphaLock);
+      return liveCanvas;
+    }
     if (!withLive || !isLiveLayer(layer)) return layer.canvas;
     liveCtx.globalCompositeOperation = 'copy';
     liveCtx.globalAlpha = 1;
@@ -505,6 +513,10 @@
   }
 
   function drawOverlay() {
+    if (transformSession) {
+      drawTransformOverlay();
+      return;
+    }
     if (pickPreview) {
       const { x, y, color, touch } = pickPreview;
       const cy = touch ? y - 70 : y;
@@ -1159,6 +1171,437 @@
   }
 
   // ---------------------------------------------------------------------------
+  // Image import and layer transform
+  // ---------------------------------------------------------------------------
+
+  // While placing, the image floats over its destination layer and is only
+  // drawn into the layer pixels when the user confirms.
+  let transformSession = null;
+  const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#4666ff';
+  const tfTarget = $('tfTarget');
+  const tfScale = $('tfScale');
+  const tfAngle = $('tfAngle');
+  const imageFileInput = $('imageFileInput');
+
+  function blockedByTransform() {
+    if (!transformSession) return false;
+    toast('先に画像の配置を「確定」するか「キャンセル」してください');
+    return true;
+  }
+
+  function drawFloating(ctx, t, alphaLock) {
+    ctx.save();
+    ctx.globalCompositeOperation = alphaLock ? 'source-atop' : 'source-over';
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.translate(t.cx, t.cy);
+    ctx.rotate(t.angle);
+    ctx.scale(t.scale * (t.flipX ? -1 : 1), t.scale * (t.flipY ? -1 : 1));
+    ctx.drawImage(t.source, -t.sw / 2, -t.sh / 2);
+    ctx.restore();
+  }
+
+  function fitScale(t) {
+    const cos = Math.abs(Math.cos(t.angle));
+    const sin = Math.abs(Math.sin(t.angle));
+    const boxW = t.sw * cos + t.sh * sin;
+    const boxH = t.sw * sin + t.sh * cos;
+    return Math.min(doc.width / boxW, doc.height / boxH);
+  }
+
+  function minTransformScale(t) {
+    return 2 / Math.max(t.sw, t.sh);
+  }
+
+  function importImage() {
+    if (blockedByTransform()) return;
+    imageFileInput.value = '';
+    imageFileInput.click();
+  }
+
+  imageFileInput.addEventListener('change', async () => {
+    const file = imageFileInput.files && imageFileInput.files[0];
+    if (!file) return;
+    let image;
+    try {
+      image = await storage.loadImage(file);
+    } catch {
+      toast('この画像は読み込めません。PNG・JPEG・WebP などを選んでください');
+      return;
+    }
+    if (!image.naturalWidth || !image.naturalHeight) {
+      toast('この画像は読み込めません。PNG・JPEG・WebP などを選んでください');
+      return;
+    }
+    beginTransform({ mode: 'import', source: image, sw: image.naturalWidth, sh: image.naturalHeight });
+  });
+
+  function contentBounds(layer) {
+    const { data } = layer.ctx.getImageData(0, 0, doc.width, doc.height);
+    let x0 = doc.width;
+    let y0 = doc.height;
+    let x1 = -1;
+    let y1 = -1;
+    for (let y = 0; y < doc.height; y += 1) {
+      const row = y * doc.width;
+      for (let x = 0; x < doc.width; x += 1) {
+        if (data[(row + x) * 4 + 3] === 0) continue;
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
+      }
+    }
+    return x1 < 0 ? null : { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+  }
+
+  function transformActiveLayer() {
+    if (blockedByTransform()) return;
+    const layer = activeLayer();
+    if (!canDrawOn(layer)) return;
+    const bounds = contentBounds(layer);
+    if (!bounds) {
+      toast('このレイヤーには何も描かれていません');
+      return;
+    }
+    const source = makeCanvas(bounds.w, bounds.h);
+    source.getContext('2d').drawImage(layer.canvas, bounds.x, bounds.y, bounds.w, bounds.h, 0, 0, bounds.w, bounds.h);
+    beginTransform({
+      mode: 'layer',
+      source,
+      sw: bounds.w,
+      sh: bounds.h,
+      layer,
+      cx: bounds.x + bounds.w / 2,
+      cy: bounds.y + bounds.h / 2,
+    });
+  }
+
+  function beginTransform({ mode, source, sw, sh, layer, cx, cy }) {
+    cancelAction();
+    closeSheet();
+    const t = {
+      mode,
+      source,
+      sw,
+      sh,
+      cx: cx ?? doc.width / 2,
+      cy: cy ?? doc.height / 2,
+      scale: 1,
+      angle: 0,
+      flipX: false,
+      flipY: false,
+      layer: null,
+      tempLayer: null,
+      originalActiveId: doc.activeId,
+      beforeStructure: snapshotStructure(),
+      beforePixels: null,
+    };
+    transformSession = t;
+
+    if (mode === 'import') {
+      t.scale = fitScale(t);
+      buildTargetOptions();
+      tfTarget.value = 'bottom';
+      setTransformTarget('bottom');
+    } else {
+      t.layer = layer;
+      t.beforePixels = layer.ctx.getImageData(0, 0, doc.width, doc.height);
+      layer.ctx.clearRect(0, 0, doc.width, doc.height);
+      pixelsChanged(layer);
+    }
+
+    $('tfTargetField').hidden = mode !== 'import';
+    $('optionBar').classList.add('is-transforming');
+    $('transformBar').hidden = false;
+    $('transformActions').hidden = false;
+    document.body.classList.add('is-transforming');
+    syncTransformInputs();
+    updateCursor();
+    invalidate();
+  }
+
+  function buildTargetOptions() {
+    const options = [
+      ['bottom', '背景(一番下に新しいレイヤー)'],
+      ['above', '新しいレイヤー(選択中のレイヤーの上)'],
+    ].map(([value, label]) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      return option;
+    });
+    for (let i = doc.layers.length - 1; i >= 0; i -= 1) {
+      const layer = doc.layers[i];
+      const option = document.createElement('option');
+      option.value = `layer:${layer.id}`;
+      option.textContent = layer.locked ? `${layer.name}(ロック中)` : layer.name;
+      option.disabled = layer.locked;
+      options.push(option);
+    }
+    tfTarget.replaceChildren(...options);
+  }
+
+  function setTransformTarget(value) {
+    const t = transformSession;
+    if (t.tempLayer) {
+      doc.layers.splice(doc.layers.indexOf(t.tempLayer), 1);
+      t.tempLayer = null;
+    }
+    if (value === 'bottom' || value === 'above') {
+      const layer = createLayer(value === 'bottom' ? '下絵' : nextLayerName());
+      const originIndex = doc.layers.findIndex((l) => l.id === t.originalActiveId);
+      const index = value === 'bottom' ? 0 : (originIndex === -1 ? doc.layers.length - 1 : originIndex) + 1;
+      doc.layers.splice(index, 0, layer);
+      t.tempLayer = layer;
+      t.layer = layer;
+    } else {
+      t.layer = doc.layers.find((l) => `layer:${l.id}` === value) || activeLayer();
+    }
+    doc.activeId = t.layer.id;
+    structureChanged();
+  }
+
+  function syncTransformInputs() {
+    const t = transformSession;
+    if (!t) return;
+    if (document.activeElement !== tfScale) tfScale.value = Math.round(t.scale * 1000) / 10;
+    if (document.activeElement !== tfAngle) tfAngle.value = Math.round((normalizeAngle(t.angle) * 180) / Math.PI);
+    $('tfFlipH').setAttribute('aria-pressed', String(t.flipX));
+    $('tfFlipV').setAttribute('aria-pressed', String(t.flipY));
+  }
+
+  function endTransform() {
+    transformSession = null;
+    $('optionBar').classList.remove('is-transforming');
+    $('transformBar').hidden = true;
+    $('transformActions').hidden = true;
+    document.body.classList.remove('is-transforming');
+    structureChanged();
+    updateCursor();
+  }
+
+  function applyTransform() {
+    const t = transformSession;
+    if (!t) return;
+    if (action && action.type === 'transform') finishAction();
+    const layer = t.layer;
+    if (layer.locked) {
+      toast('配置先のレイヤーがロックされています');
+      return;
+    }
+    if (t.tempLayer) {
+      drawFloating(layer.ctx, t, layer.alphaLock);
+      const before = t.beforeStructure;
+      const after = snapshotStructure();
+      history.push({
+        bytes: doc.width * doc.height * 4,
+        undo: () => restoreStructure(before),
+        redo: () => restoreStructure(after),
+      });
+    } else {
+      const before = t.beforePixels || layer.ctx.getImageData(0, 0, doc.width, doc.height);
+      drawFloating(layer.ctx, t, layer.alphaLock);
+      const after = layer.ctx.getImageData(0, 0, doc.width, doc.height);
+      pushPixelEntry(layer, { x: 0, y: 0, w: doc.width, h: doc.height }, before, after);
+    }
+    pixelsChanged(layer);
+    endTransform();
+    toast(t.mode === 'import' ? `「${layer.name}」に画像を配置しました` : '変形しました');
+  }
+
+  function cancelTransform() {
+    const t = transformSession;
+    if (!t) return;
+    if (action && action.type === 'transform') cancelAction();
+    if (t.tempLayer) doc.layers.splice(doc.layers.indexOf(t.tempLayer), 1);
+    if (t.mode === 'layer') {
+      t.layer.ctx.putImageData(t.beforePixels, 0, 0);
+      pixelsChanged(t.layer);
+    }
+    doc.activeId = t.originalActiveId;
+    endTransform();
+  }
+
+  function docToScreen(p) {
+    const m = viewMatrix();
+    return { x: m.a * p.x + m.c * p.y + m.e, y: m.b * p.x + m.d * p.y + m.f };
+  }
+
+  function transformCorners(t) {
+    const hw = (t.sw * t.scale) / 2;
+    const hh = (t.sh * t.scale) / 2;
+    const cos = Math.cos(t.angle);
+    const sin = Math.sin(t.angle);
+    return [
+      [-hw, -hh],
+      [hw, -hh],
+      [hw, hh],
+      [-hw, hh],
+    ].map(([x, y]) => docToScreen({ x: t.cx + x * cos - y * sin, y: t.cy + x * sin + y * cos }));
+  }
+
+  function rotateHandle(corners) {
+    const t = transformSession;
+    const top = { x: (corners[0].x + corners[1].x) / 2, y: (corners[0].y + corners[1].y) / 2 };
+    const center = docToScreen({ x: t.cx, y: t.cy });
+    let dx = top.x - center.x;
+    let dy = top.y - center.y;
+    const length = Math.hypot(dx, dy);
+    if (length < 1) {
+      dx = 0;
+      dy = -1;
+    } else {
+      dx /= length;
+      dy /= length;
+    }
+    return { top, handle: { x: top.x + dx * 30, y: top.y + dy * 30 } };
+  }
+
+  function drawTransformOverlay() {
+    const corners = transformCorners(transformSession);
+    const { top, handle } = rotateHandle(corners);
+    vctx.save();
+    vctx.beginPath();
+    corners.forEach((p, i) => (i ? vctx.lineTo(p.x, p.y) : vctx.moveTo(p.x, p.y)));
+    vctx.closePath();
+    vctx.moveTo(top.x, top.y);
+    vctx.lineTo(handle.x, handle.y);
+    vctx.lineWidth = 3;
+    vctx.strokeStyle = 'rgba(255,255,255,0.9)';
+    vctx.stroke();
+    vctx.lineWidth = 1.5;
+    vctx.strokeStyle = accentColor;
+    vctx.stroke();
+
+    vctx.fillStyle = '#ffffff';
+    corners.forEach((p) => {
+      vctx.beginPath();
+      vctx.rect(p.x - 6, p.y - 6, 12, 12);
+      vctx.fill();
+      vctx.stroke();
+    });
+    vctx.beginPath();
+    vctx.arc(handle.x, handle.y, 7, 0, Math.PI * 2);
+    vctx.fill();
+    vctx.stroke();
+    vctx.restore();
+  }
+
+  function hitTransform(point, pointerType) {
+    const t = transformSession;
+    const tolerance = pointerType === 'touch' ? 26 : 12;
+    const corners = transformCorners(t);
+    const { handle } = rotateHandle(corners);
+    if (Math.hypot(point.x - handle.x, point.y - handle.y) <= tolerance) return 'rotate';
+    if (corners.some((c) => Math.hypot(point.x - c.x, point.y - c.y) <= tolerance)) return 'scale';
+    const d = screenToDoc(point.x, point.y);
+    const cos = Math.cos(-t.angle);
+    const sin = Math.sin(-t.angle);
+    const lx = ((d.x - t.cx) * cos - (d.y - t.cy) * sin) / t.scale;
+    const ly = ((d.x - t.cx) * sin + (d.y - t.cy) * cos) / t.scale;
+    if (Math.abs(lx) <= t.sw / 2 && Math.abs(ly) <= t.sh / 2) return 'move';
+    return 'rotate';
+  }
+
+  function updateTransformHoverCursor(point, pointerType) {
+    if (spaceDown || tool === 'hand') return;
+    const kind = hitTransform(point, pointerType);
+    stage.dataset.cursor = kind === 'move' ? 'move' : kind === 'scale' ? 'resize' : 'rotate';
+  }
+
+  function startTransformDrag(event, point) {
+    const t = transformSession;
+    action = {
+      type: 'transform',
+      kind: hitTransform(point, event.pointerType),
+      pointerId: event.pointerId,
+      pointerType: event.pointerType,
+      start: screenToDoc(point.x, point.y),
+      saved: { cx: t.cx, cy: t.cy, scale: t.scale, angle: t.angle },
+    };
+  }
+
+  function updateTransformDrag(point, event) {
+    const t = transformSession;
+    const a = action;
+    const d = screenToDoc(point.x, point.y);
+    const { cx, cy, scale, angle } = a.saved;
+    if (a.kind === 'move') {
+      t.cx = cx + (d.x - a.start.x);
+      t.cy = cy + (d.y - a.start.y);
+    } else if (a.kind === 'scale') {
+      const r0 = Math.max(1e-6, Math.hypot(a.start.x - cx, a.start.y - cy));
+      const r = Math.hypot(d.x - cx, d.y - cy);
+      t.scale = clamp(scale * (r / r0), minTransformScale(t), 20);
+    } else {
+      const a0 = Math.atan2(a.start.y - cy, a.start.x - cx);
+      const a1 = Math.atan2(d.y - cy, d.x - cx);
+      let next = angle + (a1 - a0);
+      if (event.shiftKey) {
+        const step = Math.PI / 12;
+        next = Math.round(next / step) * step;
+      }
+      t.angle = normalizeAngle(next);
+    }
+    syncTransformInputs();
+    invalidate();
+  }
+
+  function bindTransformUI() {
+    tfTarget.addEventListener('change', () => {
+      if (transformSession) setTransformTarget(tfTarget.value);
+    });
+    tfScale.addEventListener('change', () => {
+      const t = transformSession;
+      if (!t) return;
+      const value = Number(tfScale.value);
+      if (value > 0) t.scale = clamp(value / 100, minTransformScale(t), 20);
+      syncTransformInputs();
+      invalidate();
+    });
+    tfAngle.addEventListener('change', () => {
+      const t = transformSession;
+      if (!t) return;
+      t.angle = normalizeAngle(((Number(tfAngle.value) || 0) * Math.PI) / 180);
+      syncTransformInputs();
+      invalidate();
+    });
+    const rotate = (deg) => {
+      const t = transformSession;
+      if (!t) return;
+      t.angle = normalizeAngle(t.angle + (deg * Math.PI) / 180);
+      syncTransformInputs();
+      invalidate();
+    };
+    $('tfRotLeft').addEventListener('click', () => rotate(-90));
+    $('tfRotRight').addEventListener('click', () => rotate(90));
+    $('tfFlipH').addEventListener('click', () => {
+      if (!transformSession) return;
+      transformSession.flipX = !transformSession.flipX;
+      syncTransformInputs();
+      invalidate();
+    });
+    $('tfFlipV').addEventListener('click', () => {
+      if (!transformSession) return;
+      transformSession.flipY = !transformSession.flipY;
+      syncTransformInputs();
+      invalidate();
+    });
+    $('tfFit').addEventListener('click', () => {
+      const t = transformSession;
+      if (!t) return;
+      t.scale = fitScale(t);
+      t.cx = doc.width / 2;
+      t.cy = doc.height / 2;
+      syncTransformInputs();
+      invalidate();
+    });
+    $('tfApply').addEventListener('click', applyTransform);
+    $('tfCancel').addEventListener('click', cancelTransform);
+  }
+
+  // ---------------------------------------------------------------------------
   // Pointer input, gestures
   // ---------------------------------------------------------------------------
 
@@ -1200,6 +1643,10 @@
         pixelsChanged(action.layer);
       }
       strokeCtx.clearRect(0, 0, doc.width, doc.height);
+    }
+    if (action.type === 'transform' && transformSession) {
+      Object.assign(transformSession, action.saved);
+      syncTransformInputs();
     }
     pickPreview = null;
     action = null;
@@ -1266,6 +1713,7 @@
     noteInputType(event);
     closeMenu();
 
+    if (event.target !== view) return;
     if (event.pointerType === 'touch') {
       onTouchDown(event, point);
       return;
@@ -1279,6 +1727,10 @@
       return;
     }
     if (event.button !== 0) return;
+    if (transformSession) {
+      startTransformDrag(event, point);
+      return;
+    }
     if (altDown || tool === 'eyedropper') {
       startPick(event, point);
       return;
@@ -1294,6 +1746,10 @@
 
     if (touches.size === 1) {
       tapState = { start: performance.now(), max: 1, moved: false };
+      if (transformSession && tool !== 'hand') {
+        startTransformDrag(event, point);
+        return;
+      }
       if (!settings.fingerDraw || tool === 'hand') {
         startPan(event, point);
         return;
@@ -1349,7 +1805,8 @@
     }
 
     if (!action) {
-      if (stage.dataset.cursor === 'none') requestRender();
+      if (transformSession) updateTransformHoverCursor(point, event.pointerType);
+      else if (stage.dataset.cursor === 'none') requestRender();
       return;
     }
 
@@ -1369,6 +1826,8 @@
       pickAt(point, event.pointerType === 'touch');
     } else if (action.type === 'draw') {
       processDrawMove(event);
+    } else if (action.type === 'transform') {
+      updateTransformDrag(point, event);
     }
   }
 
@@ -1448,6 +1907,7 @@
     let cursor = 'crosshair';
     if (action && action.type === 'pan') cursor = 'grabbing';
     else if (spaceDown || tool === 'hand') cursor = 'grab';
+    else if (transformSession) cursor = 'move';
     else if (altDown || tool === 'eyedropper') cursor = 'crosshair';
     else if (STROKE_TOOLS.includes(tool)) cursor = 'none';
     stage.dataset.cursor = cursor;
@@ -1459,11 +1919,13 @@
   // ---------------------------------------------------------------------------
 
   function undo() {
+    if (blockedByTransform()) return;
     if (action && action.type !== 'gesture' && action.type !== 'wait') cancelAction();
     if (!history.undo()) toast('これ以上元に戻せません');
   }
 
   function redo() {
+    if (blockedByTransform()) return;
     if (action && action.type !== 'gesture' && action.type !== 'wait') cancelAction();
     if (!history.redo()) toast('これ以上やり直せません');
   }
@@ -1482,6 +1944,7 @@
 
   function setTool(next) {
     if (!TOOL_OPTIONS[next]) return;
+    if (transformSession && next !== 'hand' && next !== tool && blockedByTransform()) return;
     if (action && action.type === 'draw') cancelAction();
     tool = next;
     settings.tool = next;
@@ -2044,6 +2507,7 @@
     $('renameLayerBtn').addEventListener('click', () => renameLayer());
     $('clearLayerBtn').addEventListener('click', clearLayer);
     $('deleteLayerBtn').addEventListener('click', deleteLayer);
+    $('transformLayerBtn').addEventListener('click', transformActiveLayer);
   }
 
   // ---------------------------------------------------------------------------
@@ -2103,11 +2567,16 @@
       if (!item) return;
       closeMenu();
       const name = item.dataset.menu;
+      if (transformSession && name !== 'help') {
+        blockedByTransform();
+        return;
+      }
       if (name === 'new') openNewDialog();
       if (name === 'open') openProject();
       if (name === 'save') saveProject();
       if (name === 'export') openExportDialog();
       if (name === 'help') openDialog($('helpDialog'));
+      if (name === 'import') importImage();
     });
     const fingerToggle = $('fingerDrawToggle');
     fingerToggle.checked = settings.fingerDraw;
@@ -2245,7 +2714,7 @@
   async function runAutosave() {
     clearTimeout(autosaveTimer);
     autosaveTimer = null;
-    if (action && action.type === 'draw') {
+    if ((action && action.type === 'draw') || transformSession) {
       scheduleAutosave();
       return;
     }
@@ -2385,6 +2854,18 @@
 
   function onKeyDown(event) {
     if (document.querySelector('dialog[open]')) return;
+    if (transformSession && !isTyping(event.target)) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        cancelTransform();
+        return;
+      }
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        applyTransform();
+        return;
+      }
+    }
     if (event.key === 'Escape') {
       closeMenu();
       closeSheet();
@@ -2524,6 +3005,7 @@
     bindOptionBar();
     bindColorUI();
     bindLayerPanel();
+    bindTransformUI();
     bindMenu();
     bindSheets();
   }
